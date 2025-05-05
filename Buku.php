@@ -172,19 +172,34 @@ public function hapus_buku()
     $uri = service('uri');
     $idHapus = $uri->getSegment(3);
 
-    $dataHapus = $modelBuku->getDataBuku(['id_buku' => $idHapus])->getRowArray();
-    unlink('Assets/CoverBuku/'.$dataHapus['cover_buku']); // hapus file yang lama
-    unlink('Assets/E-Book/'.$dataHapus['e_book']); // hapus file yang lama
+    // Ambil data buku untuk mendapatkan nama file
+    $dataHapus = $modelBuku->getDataBuku(['sha1(id_buku)' => $idHapus])->getRowArray();
 
-    $modelBuku->hapusDataBuku(['(id_buku
-    )' => $idHapus]);
+    // Hapus file cover dan e-book jika file ada
+    if (!empty($dataHapus['cover_buku']) && file_exists('Assets/CoverBook/' . $dataHapus['cover_buku'])) {
+        unlink('Assets/CoverBook/' . $dataHapus['cover_buku']);
+    }
+    if (!empty($dataHapus['e_book']) && file_exists('Assets/E-Book/' . $dataHapus['e_book'])) {
+        unlink('Assets/E-Book/' . $dataHapus['e_book']);
+    }
+
+    // Soft delete: update kolom is_delete_buku
+    $dataUpdate = [
+        'is_delete_buku' => '1',
+        'updated_at' => date("Y-m-d H:i:s")
+    ];
+    $whereUpdate = ['sha1(id_buku)' => $idHapus];
+
+    $modelBuku->updateDataBuku($dataUpdate, $whereUpdate);
+
     session()->setFlashdata('success', 'Data Buku Berhasil Dihapus!');
-?>
-<script>
-    document.location = "<?= base_url('buku/master_data_buku'); ?>";
-</script>
-<?php
+    ?>
+    <script>
+        document.location = "<?= base_url('buku/master-data-buku'); ?>";
+    </script>
+    <?php
 }
+
 
 public function update_buku()
 {
